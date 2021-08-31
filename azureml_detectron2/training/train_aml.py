@@ -2,27 +2,35 @@
 # coding: utf-8
 
 from azureml.core.environment import Environment
+import os
+
+from azureml_detectron2 import config as C
+
+from dotenv import load_dotenv
+load_dotenv()
+
 # Create the environment
-myenv = Environment(name="myenv")
+myenv = Environment(name=os.environ.get("ENV_NAME"))
 
 # Set the container registry information
-myenv.docker.base_image_registry.address = ""
-myenv.docker.base_image_registry.username = ""
-myenv.docker.base_image_registry.password = ""
+myenv.docker.base_image_registry.address = os.environ.get("ENV_BASE_IMAGE_REPO_ADDRESS")
+myenv.docker.base_image_registry.username = os.environ.get("ENV_BASE_IMAGE_REPO_USERNAME")
+myenv.docker.base_image_registry.password = os.environ.get("ENV_BASE_IMAGE_REPO_PASSWORD")
 
-myenv.inferencing_stack_version = "latest"  # This will install the inference specific apt packages.
+myenv.inferencing_stack_version = os.environ.get("ENV_BASE_IMAGE_REPO_VERSION")  # This will install the inference specific apt packages.
+
 
 # Define the packages needed by the model and scripts
 from azureml.core.conda_dependencies import CondaDependencies
 conda_dep = CondaDependencies()
 
 # you must list azureml-defaults as a pip dependency
-conda_dep.add_pip_package("azureml-defaults")
+conda_dep.add_pip_package(C.PIP_PACKAGE_NAME)
 myenv.python.conda_dependencies=conda_dep
 
 from azureml.core.model import InferenceConfig
 # Use environment in InferenceConfig
-inference_config = InferenceConfig(entry_script="train.py",
+inference_config = InferenceConfig(entry_script=C.TRAIN_SCRIPT_NAME,
                                    environment=myenv)
 
 
@@ -44,16 +52,18 @@ from azureml.core import Workspace, Experiment, ScriptRunConfig, Dataset
 from azureml.core.runconfig import MpiConfiguration
 from azureml.core.compute import AmlCompute
 
-cluster = AmlCompute(ws, "GPUengine") # Get existing cluster
+cluster = AmlCompute(ws, C.CLUSTER_NAME)
+
+# Get existing cluster
 # dataset = Dataset.get_by_name(workspace, "coco2017_trainval")
 
-experiment = Experiment(ws, "Detectron2")
+experiment = Experiment(ws, C.EXPERIMENT_NAME)
 
 #dist_config = MpiConfiguration(node_count=4, process_count_per_node=8)
 
 jobconfig = ScriptRunConfig(
   source_directory=".",
-  script="train.py",
+  script=C.TRAIN_SCRIPT_NAME,
 #   arguments=["--dataset", dataset.as_mount()],
   compute_target=cluster,
   environment=myenv
