@@ -1,4 +1,4 @@
-
+# This file was copied from https://github.com/facebookresearch/detectron2/blob/main/demo/demo.py
 # Copyright (c) Facebook, Inc. and its affiliates.
 import argparse
 import glob
